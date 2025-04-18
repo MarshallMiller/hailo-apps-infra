@@ -13,6 +13,8 @@ def get_source_type(input_source):
         return 'ximage'
     elif input_source.startswith('tcp://'):
         return 'tcp'
+    elif input_source.startswith('rtsp://'):
+        return 'rtsp'
     else:
         return 'file'
 
@@ -107,6 +109,12 @@ def SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_forma
         host, port = get_tcp_host_port(video_source)
         source_element = (
             f'tcpclientsrc host={host} port={port} ! '
+            f'{QUEUE(name=f"{name}_queue_decode")} ! '
+            f'decodebin name={name}_decodebin ! '
+        )
+    elif source_type == 'rtsp':
+        source_element = (
+            f'rtspsrc location={video_source} ! '
             f'{QUEUE(name=f"{name}_queue_decode")} ! '
             f'decodebin name={name}_decodebin ! '
         )
