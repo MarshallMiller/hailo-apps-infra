@@ -11,6 +11,8 @@ def get_source_type(input_source):
         return 'libcamera'
     elif input_source.startswith('0x'):
         return 'ximage'
+    elif input_source.startswith('tcp://'):
+        return 'tcp'
     else:
         return 'file'
 
@@ -44,6 +46,12 @@ def get_camera_resulotion(video_width=640, video_height=640):
     else:
         return 3840, 2160
 
+def get_tcp_host_port(video_source):
+    host_port = video_source[len('tcp://'):]
+    host, port = host_port.split(':')
+    if not port:
+        raise Exception('tcp source not properly formatted. format must follow tcp://<host>:<port>')
+    return (host, port)
 
 def SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_format='RGB', name='source', no_webcam_compression=False):
     """
@@ -94,6 +102,13 @@ def SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_forma
             f'ximagesrc xid={video_source} ! '
             f'{QUEUE(name=f"{name}queue_scale_")} ! '
             f'videoscale ! '
+        )
+    elif source_type == 'tcp':
+        host, port = get_tcp_host_port(video_source)
+        source_element = (
+            f'tcpclientsrc host={host} port={port} ! '
+            f'{QUEUE(name=f"{name}_queue_decode")} ! '
+            f'decodebin name={name}_decodebin ! '
         )
     else:
         source_element = (
